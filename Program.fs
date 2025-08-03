@@ -24,8 +24,8 @@ let window = glfw.CreateWindow(width, height, "test", NativePtr.ofNativeInt 0n, 
 glfw.MakeContextCurrent window
 
 let mutable game_state = {
-    PlayerX = float32 width / 2f
-    PlayerY = float32 height / 2f
+    PlayerX = float32 100
+    PlayerY = float32 100
 }
 
 let mutable keys_pressed = Set.empty<Keys>
@@ -48,7 +48,7 @@ let grGlBackendRenderTarget = new GRBackendRenderTarget(width, height, 1, 0, grG
 let render (canvas: SKCanvas) (state: GameState) =
     canvas.Clear SKColors.White
     use player_paint = new SKPaint(Color = SKColors.Blue, IsAntialias = true)
-    canvas.DrawCircle(20f, 20f, 30f, player_paint)
+    canvas.DrawCircle(state.PlayerX, state.PlayerY, 30f, player_paint)
 
 
 let update(state: GameState) (delta: float32) (keys: Set<Keys>) =
