@@ -6,6 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Components.fs" />
+    <Compile Include="Systems.fs" />
+    <Compile Include="Input.fs" />
+    <Compile Include="Game.fs" />
+    <Compile Include="Render.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

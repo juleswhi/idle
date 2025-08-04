@@ -1,16 +1,18 @@
-﻿open FSharp.NativeInterop
+﻿module Program
+
+open FSharp.NativeInterop
 
 open Silk.NET.GLFW
 open SkiaSharp
 
 open System.Diagnostics
 
-#nowarn "9"
+open Input
+open Systems
+open Components
+open Game
 
-type GameState = {
-    PlayerX: float32
-    PlayerY: float32
-}
+#nowarn "9"
 
 let width, height = 800, 600
 let target_fps= 60f
@@ -20,44 +22,40 @@ let glfw = Glfw.GetApi()
 
 if not(glfw.Init()) then failwith "Initialisation failed"
 
-let window = glfw.CreateWindow(width, height, "test", NativePtr.ofNativeInt 0n, NativePtr.ofNativeInt 0n)
+let window = glfw.CreateWindow(width, height, "idle", NativePtr.ofNativeInt 0n, NativePtr.ofNativeInt 0n)
+if NativePtr.isNullPtr window  then
+    failwith "Window creation failed"
+
 glfw.MakeContextCurrent window
+glfw.SwapInterval 1
 
-let mutable game_state = {
-    PlayerX = float32 100
-    PlayerY = float32 100
-}
-
-let mutable keys_pressed = Set.empty<Keys>
-
-glfw.SetKeyCallback(window, fun _ key _ action _ ->
-    match action with
-    | InputAction.Press -> keys_pressed <- keys_pressed.Add key
-    | InputAction.Release -> keys_pressed <- keys_pressed.Remove key
-    | _ -> ()
-) |> ignore
+set_key_callback glfw window
 
 let grGlInterface = GRGlInterface.Create(fun name -> glfw.GetProcAddress name)
 
 if not(grGlInterface.Validate()) then failwith "Invalid GRGLInterface"
 
 let grContext = GRContext.CreateGl grGlInterface
-let grGlFrameBufferInfo = new GRGlFramebufferInfo(0u, SKColorType.Rgba8888.ToGlSizedFormat())
-let grGlBackendRenderTarget = new GRBackendRenderTarget(width, height, 1, 0, grGlFrameBufferInfo)
-
-let render (canvas: SKCanvas) (state: GameState) =
-    canvas.Clear SKColors.White
-    use player_paint = new SKPaint(Color = SKColors.Blue, IsAntialias = true)
-    canvas.DrawCircle(state.PlayerX, state.PlayerY, 30f, player_paint)
-
-
-let update(state: GameState) (delta: float32) (keys: Set<Keys>) =
-    let mutable new_state = state
-    new_state
+let frame_buffer_info = new GRGlFramebufferInfo(0u, SKColorType.Rgba8888.ToGlSizedFormat())
+let render_target = new GRBackendRenderTarget(width, height, 1, 0, frame_buffer_info)
 
 let stopwatch = Stopwatch.StartNew()
 let mutable lag = 0.0
 let mutable accum = 0.0
+
+let initial_world =
+    let w, player = World.empty |> World.new_entity
+    w
+    |> World.add_comp player (Position {X = 25; Y = 25})
+    |> World.add_comp player (Velocity {X = 0; Y = 0})
+    |> World.add_comp player (Sprite (Shape (Rectangle (50.0, 50.0), SKColors.Red)))
+    |> World.add_comp player (Health {Current = 100; Max = 100 })
+    |> World.add_comp player Player
+
+let systems: (World -> World) list = [movement_system; player_input_system]
+let mutable world = initial_world
+
+printfn "Initialised"
 
 while not(glfw.WindowShouldClose window) do
     let current_time = stopwatch.Elapsed.TotalSeconds
@@ -68,11 +66,17 @@ while not(glfw.WindowShouldClose window) do
     glfw.PollEvents()
 
     while lag >= float frame_time do
-        game_state <- update game_state (float32 frame_time) keys_pressed
+        if keys_pressed.Contains Keys.Q then
+            glfw.SetWindowShouldClose(window, true)
+
+        world <- update world (float32 frame_time) keys_pressed
         lag <- lag - float frame_time
 
-    use surface = SKSurface.Create(grContext, grGlBackendRenderTarget, GRSurfaceOrigin.BottomLeft, SKColorType.Rgba8888)
-    render surface.Canvas game_state
+    use surface = SKSurface.Create(grContext, render_target, GRSurfaceOrigin.BottomLeft, SKColorType.Rgba8888)
+    Renderer.render surface.Canvas world
+
+    world <- systems
+    |> List.fold (fun w s -> s w) world
 
     surface.Canvas.Flush()
 
