@@ -45,12 +45,16 @@ let mutable accum = 0.0
 
 let initial_world =
     let w, player = World.empty |> World.new_entity
+    let w, circle = w |> World.new_entity
     w
     |> World.add_comp player (Position {X = 25; Y = 25})
     |> World.add_comp player (Velocity {X = 0; Y = 0})
     |> World.add_comp player (Sprite (Shape (Rectangle (50.0, 50.0), SKColors.Red)))
     |> World.add_comp player (Health {Current = 100; Max = 100 })
     |> World.add_comp player Player
+    |> World.add_comp player Gravity
+    |> World.add_comp circle (Position {X = 200; Y = 200})
+    |> World.add_comp circle (Sprite (Shape (Circle 50.0, SKColors.Black)))
 
 let systems: (World -> World) list = [movement_system; player_input_system]
 let mutable world = initial_world

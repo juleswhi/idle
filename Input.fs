@@ -17,7 +17,6 @@ let set_key_callback (glfw: Glfw) window =
 let input_system (world: World) =
     world
 
-
 let player_input_system (world: World) : World =
     let player = World.get_player world
 

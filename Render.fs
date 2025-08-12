@@ -36,8 +36,6 @@ let render (canvas: SKCanvas) (world: World) =
         | Shape (shape, colour) ->
             paint.Color <- colour
             match shape with
-            | Circle raduis -> canvas.DrawCircle(SKPoint(float32 pos.X, float32 pos.Y), float32 raduis, paint)
-
             | Rectangle (width, height) ->
                 let rect = SKRect(
                     float32 (pos.X - width/2.0),
@@ -53,5 +51,13 @@ let render (canvas: SKCanvas) (world: World) =
                     float32 (pos.X + size/2.0),
                     float32 (pos.Y + size/2.0))
                 canvas.DrawRect(rect, paint)
+
+            | Circle radius ->
+                canvas.DrawCircle(
+                    SKPoint(float32(pos.X - radius/2.0), float32(pos.Y - radius/2.0)),
+                    float32 radius,
+                    paint)
+
+
 
     )

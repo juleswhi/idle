@@ -21,6 +21,7 @@ type Component =
     | Health of Health
     | Sprite of Sprite
     | Player
+    | Gravity
 
 type World = {
     Entities: Set<Entity>
